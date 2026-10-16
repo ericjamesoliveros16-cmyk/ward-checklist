@@ -1,0 +1,856 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f4f7f8">
+  <title>Clinical Equipment Check</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #132c3a;
+      --muted: #607581;
+      --line: #dce6e9;
+      --surface: #fff;
+      --page: #f3f7f8;
+      --teal: #087e82;
+      --teal-dark: #066468;
+      --green: #16734c;
+      --green-bg: #e8f5ed;
+      --amber: #9a5b00;
+      --amber-bg: #fff3df;
+      --red: #a33c37;
+      --red-bg: #fff0ee;
+      --shadow: 0 8px 24px rgba(19, 44, 58, .055);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--page); color: var(--ink); }
+    button, input, textarea { font: inherit; }
+    button { cursor: pointer; }
+    .app { max-width: 900px; margin: 0 auto; padding: 24px 20px calc(40px + env(safe-area-inset-bottom)); }
+    .topline { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom: 20px; }
+    .brand { display:flex; align-items:center; gap:12px; }
+    .brand-mark { width:42px; height:42px; display:grid; place-items:center; border-radius:14px; color:#fff; background:var(--teal); }
+    .brand-mark svg { width:23px; height:23px; }
+    .eyebrow { color:var(--teal); font-size:11px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+    h1 { margin:2px 0 0; font-size:21px; letter-spacing:-.035em; }
+    .save-state { display:flex; align-items:center; gap:7px; color:var(--muted); font-size:12px; white-space:nowrap; }
+    .save-dot { width:8px; height:8px; border-radius:50%; background:#48a477; }
+    .save-state.error { color:var(--red); }
+    .save-state.error .save-dot { background:var(--red); }
+    .intro { margin:0 0 20px; color:var(--muted); font-size:14px; }
+    .toolbar { display:flex; align-items:flex-end; justify-content:space-between; gap:14px; margin-bottom:16px; }
+    .field-label, .control-label { display:block; margin-bottom:7px; color:#536b77; font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; }
+    .date-wrap { display:flex; align-items:center; gap:8px; }
+    input, textarea { width:100%; min-height:44px; padding:10px 12px; color:var(--ink); background:#fff; border:1px solid #cbd9de; border-radius:10px; outline:none; }
+    input:focus, textarea:focus { border-color:var(--teal); box-shadow:0 0 0 3px rgba(8,126,130,.13); }
+    input[type="date"] { width:auto; min-width:155px; font-weight:650; }
+    .icon-button { width:42px; height:42px; display:grid; place-items:center; color:#355461; background:#fff; border:1px solid var(--line); border-radius:10px; }
+    .icon-button:hover { background:#edf5f5; }
+    .text-button { display:flex; align-items:center; gap:8px; min-height:42px; padding:0 14px; color:var(--teal-dark); background:#e7f3f3; border:0; border-radius:10px; font-weight:750; }
+    .text-button svg { width:17px; height:17px; }
+    .shift-switch { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:14px; padding:5px; background:#e6edef; border-radius:14px; }
+    .shift-button { min-height:50px; color:#526975; background:transparent; border:0; border-radius:10px; font-size:14px; font-weight:750; }
+    .shift-button[aria-pressed="true"] { color:#fff; background:var(--teal); box-shadow:0 3px 9px rgba(8,126,130,.2); }
+    .area-selector { margin:0 0 15px; }
+    .area-selector-label { margin:0 0 7px 2px; color:#536b77; font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; }
+    .area-switch { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px; }
+    .area-button { min-height:47px; padding:8px 5px; color:#526975; background:#fff; border:1px solid var(--line); border-radius:10px; font-size:12px; line-height:1.2; font-weight:750; }
+    .area-button[aria-pressed="true"] { color:var(--teal-dark); background:#e7f3f3; border:2px solid var(--teal); }
+    .view-switch { display:flex; gap:8px; margin:0 0 15px; }
+    .view-button { min-height:42px; padding:0 15px; color:#526975; background:#fff; border:1px solid var(--line); border-radius:10px; font-size:13px; font-weight:750; }
+    .view-button[aria-pressed="true"] { color:#fff; background:#46636f; border-color:#46636f; }
+    .locked-banner { margin:0 0 15px; padding:13px 15px; color:#784c00; background:#fff3df; border:1px solid #e7c37e; border-radius:11px; font-size:13px; line-height:1.5; }
+    .report-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin:20px 0 12px; }
+    .report-heading h2 { margin:0; font-size:18px; }
+    .report-heading p { margin:4px 0 0; color:var(--muted); font-size:12px; }
+    .report-actions { display:flex; flex-wrap:wrap; gap:8px; }
+    .report-actions .text-button { min-height:40px; font-size:12px; }
+    .report-summary { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; margin:14px 0; }
+    .report-stat { min-height:63px; padding:10px; background:#fff; border:1px solid var(--line); border-radius:10px; }
+    .report-stat strong { display:block; font-size:20px; }
+    .report-stat span { color:var(--muted); font-size:10px; font-weight:700; }
+    .report-table-wrap { overflow-x:auto; background:#fff; border:1px solid var(--line); border-radius:12px; }
+    .report-table { width:100%; border-collapse:collapse; font-size:12px; }
+    .report-table th, .report-table td { padding:10px 11px; border-bottom:1px solid #edf1f2; text-align:left; vertical-align:top; }
+    .report-table th { color:#536b77; background:#f6f9f9; font-size:10px; letter-spacing:.04em; text-transform:uppercase; white-space:nowrap; }
+    .report-table tr:last-child td { border-bottom:0; }
+    .report-status { display:inline-block; padding:4px 7px; border-radius:20px; font-size:10px; font-weight:750; white-space:nowrap; }
+    .report-status.ok { color:#126642; background:var(--green-bg); }
+    .report-status.issue { color:#875000; background:var(--amber-bg); }
+    .report-status.missing { color:#923c37; background:var(--red-bg); }
+    .report-status.pending { color:#526975; background:#edf2f3; }
+    .report-note { margin:12px 1px 0; color:var(--muted); font-size:12px; white-space:pre-wrap; }
+    dialog.print-preview { width:min(1100px,calc(100% - 28px)); max-width:1100px; max-height:calc(100dvh - 28px); padding:0; color:var(--ink); background:var(--page); border:1px solid var(--line); border-radius:16px; box-shadow:0 24px 80px #102c3b55; }
+    dialog.print-preview::backdrop { background:#132c3aaa; }
+    .preview-header { position:sticky; z-index:1; top:0; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 16px; background:#fff; border-bottom:1px solid var(--line); }
+    .preview-header strong { font-size:14px; }
+    .preview-actions { display:flex; gap:8px; }
+    .preview-actions button { min-height:40px; padding:0 13px; color:var(--teal-dark); background:#e7f3f3; border:0; border-radius:9px; font-size:12px; font-weight:750; }
+    .preview-actions button.primary { color:#fff; background:var(--teal); }
+    .preview-body { overflow:auto; max-height:calc(100dvh - 90px); padding:20px; }
+    .preview-body .report-heading { margin-top:0; }
+    .preview-body .report-actions { display:none; }
+    .preview-body .report-table-wrap { overflow:auto; }
+    .preview-body .report-table { min-width:1000px; }
+    .location-options { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+    .location-option { display:flex; align-items:center; gap:8px; min-height:42px; padding:8px 10px; color:#455f6c; background:#fff; border:1px solid #d9e3e6; border-radius:9px; font-size:12px; font-weight:700; cursor:pointer; }
+    .location-option:has(input:checked) { color:var(--teal-dark); background:#e7f3f3; border-color:var(--teal); }
+    .location-option input { width:16px; min-height:16px; height:16px; margin:0; accent-color:var(--teal); }
+    .staff-entry { margin:0 0 15px; padding:14px 15px; background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); }
+    .staff-entry p { margin:0 0 10px; color:var(--muted); font-size:12px; line-height:1.45; }
+    .staff-entry input { min-height:46px; }
+    .summary { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:22px; }
+    .summary-card { display:flex; align-items:center; gap:10px; min-height:67px; padding:12px; background:var(--surface); border:1px solid var(--line); border-radius:12px; }
+    .summary-number { font-size:22px; font-weight:800; line-height:1; letter-spacing:-.04em; }
+    .summary-label { margin-top:4px; color:var(--muted); font-size:11px; font-weight:700; }
+    .summary-icon { width:9px; height:9px; flex:none; border-radius:50%; background:#9aaab0; }
+    .summary-card.ok .summary-icon { background:#2a9a66; }
+    .summary-card.issue .summary-icon { background:#d48a16; }
+    .summary-card.missing .summary-icon { background:#ca5b54; }
+    .summary-card.total .summary-icon { background:#418b9a; }
+    .section-heading { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin:25px 1px 10px; }
+    .section-heading h2 { margin:0; font-size:16px; letter-spacing:-.02em; }
+    .section-count { color:var(--muted); font-size:12px; font-weight:650; }
+    .equipment-list { display:grid; gap:10px; }
+    .equipment-card { overflow:hidden; background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); }
+    .equipment-card[data-status="ok"] { border-left:4px solid #42a677; }
+    .equipment-card[data-status="issue"] { border-left:4px solid #e2a438; }
+    .equipment-card[data-status="missing"] { border-left:4px solid #d87971; }
+    .card-main { padding:15px; }
+    .card-title-row { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+    .equipment-title { margin:0; font-size:15px; line-height:1.35; font-weight:750; }
+    .equipment-unit { display:inline-block; margin-top:3px; color:var(--muted); font-size:11px; }
+    .card-number { flex:none; color:#78909b; font-size:11px; font-weight:750; }
+    .status-group { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; margin-top:13px; }
+    .status-button { min-height:43px; padding:7px 5px; color:#526975; background:#f7f9fa; border:1px solid #d9e3e6; border-radius:9px; font-size:12px; font-weight:750; }
+    .status-button:hover { border-color:#9eb7bf; }
+    button:disabled, input:disabled, textarea:disabled { cursor:not-allowed; opacity:.62; }
+    .status-button[aria-pressed="true"][data-value="ok"] { color:#126642; background:var(--green-bg); border-color:#8dc4a6; }
+    .status-button[aria-pressed="true"][data-value="issue"] { color:#875000; background:var(--amber-bg); border-color:#e7c37e; }
+    .status-button[aria-pressed="true"][data-value="missing"] { color:#923c37; background:var(--red-bg); border-color:#e3a5a0; }
+    .details { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; padding:14px 15px 16px; background:#fbfcfc; border-top:1px solid #edf1f2; }
+    .form-field.full { grid-column:1/-1; }
+    .form-field label { display:block; margin-bottom:6px; color:#536b77; font-size:11px; font-weight:750; }
+    .form-field input, .form-field textarea { min-height:42px; font-size:14px; }
+    .form-field textarea { min-height:76px; resize:vertical; }
+    .toggle-row { display:flex; justify-content:space-between; align-items:center; min-height:42px; }
+    .toggle { display:inline-flex; padding:3px; background:#eaf0f1; border-radius:9px; }
+    .toggle button { min-width:52px; min-height:34px; padding:0 10px; color:#526975; background:transparent; border:0; border-radius:7px; font-size:12px; font-weight:750; }
+    .toggle button[aria-pressed="true"] { color:#fff; background:#46636f; }
+    .toggle.yes button[aria-pressed="true"] { background:var(--teal); }
+    .general-note { margin-top:24px; padding:17px; background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); }
+    .general-note h2 { margin:0 0 10px; font-size:15px; }
+    .general-note textarea { min-height:82px; }
+    .history { margin-top:25px; }
+    .history summary { display:flex; align-items:center; justify-content:space-between; list-style:none; cursor:pointer; padding:15px 17px; color:var(--teal-dark); background:var(--surface); border:1px solid var(--line); border-radius:12px; font-size:14px; font-weight:750; }
+    .history summary::-webkit-details-marker { display:none; }
+    .history-body { padding:12px 4px; }
+    .history-empty { padding:14px; color:var(--muted); font-size:13px; }
+    .history-day { margin:0 0 12px; padding:13px; background:#fff; border:1px solid var(--line); border-radius:12px; }
+    .history-day strong { display:block; margin-bottom:9px; font-size:13px; }
+    .history-shifts { display:flex; flex-wrap:wrap; gap:7px; }
+    .history-shifts button { padding:8px 10px; color:#355461; background:#eff5f5; border:0; border-radius:8px; font-size:12px; font-weight:700; }
+    .footer-note { margin:17px 2px 0; color:#71858e; font-size:11px; line-height:1.5; }
+    .toast { position:fixed; z-index:3; right:16px; bottom:calc(16px + env(safe-area-inset-bottom)); left:16px; max-width:500px; margin:0 auto; padding:13px 16px; color:#fff; background:#263f4b; border-radius:11px; box-shadow:0 8px 24px #132c3a33; font-size:13px; }
+    [hidden] { display:none !important; }
+    @media (max-width:560px) {
+      .app { padding:17px 13px calc(30px + env(safe-area-inset-bottom)); }
+      .topline { margin-bottom:15px; }
+      .brand-mark { width:38px; height:38px; border-radius:12px; }
+      h1 { font-size:18px; }
+      .save-state { font-size:11px; }
+      .intro { font-size:13px; margin-bottom:15px; }
+      .toolbar { align-items:center; }
+      .text-button { padding:0 11px; font-size:12px; }
+      .shift-button { min-height:48px; font-size:13px; }
+      .area-switch { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .area-button { min-height:46px; font-size:12px; }
+      .report-heading { flex-direction:column; }
+      .report-summary { grid-template-columns:repeat(3,minmax(0,1fr)); }
+      .summary { gap:6px; margin-bottom:18px; }
+      .summary-card { min-height:61px; gap:7px; padding:9px 7px; }
+      .summary-number { font-size:19px; }
+      .summary-label { font-size:10px; }
+      .summary-icon { width:7px; height:7px; }
+      .section-heading { margin-top:21px; }
+      .card-main { padding:13px 11px; }
+      .status-group { gap:5px; margin-top:11px; }
+      .status-button { min-height:45px; font-size:11px; }
+      .details { gap:11px 9px; padding:13px 11px 14px; }
+      .form-field input, .form-field textarea { padding-left:10px; padding-right:10px; font-size:13px; }
+      input[type="date"] { min-width:0; width:143px; font-size:13px; }
+      .icon-button { width:40px; height:40px; }
+    }
+    @media (max-width:360px) {
+      .save-state span:last-child { display:none; }
+      .summary-card { flex-direction:column; align-items:flex-start; justify-content:center; gap:5px; }
+      .summary-label { margin-top:0; }
+      .status-button { font-size:10px; }
+      .details { grid-template-columns:1fr; }
+      .form-field.full { grid-column:auto; }
+    }
+    @media print {
+      @page { size:landscape; margin:12mm; }
+      body { background:#fff; }
+      .app { max-width:none; padding:0; }
+      dialog.print-preview { display:none !important; }
+      .topline, .intro, .toolbar, .shift-switch, .view-switch, .area-selector, .staff-entry,
+      #checklistView, .history, .footer-note, .report-actions, #toast { display:none !important; }
+      #summaryView[hidden] { display:block !important; }
+      #summaryView { display:block !important; }
+      .report-heading { display:block; margin:0 0 12px; }
+      .report-summary { grid-template-columns:repeat(5,1fr); }
+      .report-table-wrap { overflow:visible; border:0; }
+      .report-table { font-size:8px; }
+      .report-table th, .report-table td { padding:5px; }
+      .report-table th { background:#edf2f3 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+      .report-status { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topline">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18"/><path d="M5.5 5.5h13v13h-13z" opacity=".4"/></svg>
+        </div>
+        <div><div class="eyebrow">Clinical readiness</div><h1>Equipment Check</h1></div>
+      </div>
+      <div class="save-state" id="saveState" role="status" aria-live="polite"><i class="save-dot"></i><span>Saved on this device</span></div>
+    </header>
+    <p class="intro">A quick, clear handover check for every clinical area.</p>
+
+    <div class="toolbar">
+      <div>
+        <label class="field-label" for="checkDate">Checklist date</label>
+        <div class="date-wrap">
+          <button class="icon-button" id="previousDay" type="button" aria-label="Previous day">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <input id="checkDate" type="date" aria-label="Checklist date">
+          <button class="icon-button" id="nextDay" type="button" aria-label="Next day">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+        </div>
+      </div>
+      <button class="text-button" id="todayButton" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
+        Today
+      </button>
+    </div>
+
+    <nav class="shift-switch" aria-label="Select shift">
+      <button class="shift-button" type="button" data-shift="Morning" aria-pressed="true">Morning</button>
+      <button class="shift-button" type="button" data-shift="Afternoon" aria-pressed="false">Afternoon</button>
+      <button class="shift-button" type="button" data-shift="Night" aria-pressed="false">Night</button>
+    </nav>
+
+    <nav class="view-switch" aria-label="Select page">
+      <button class="view-button" type="button" data-view="checklist" aria-pressed="true">Checklist</button>
+      <button class="view-button" type="button" data-view="summary" aria-pressed="false">Shift summary</button>
+    </nav>
+
+    <div id="checklistView">
+    <div class="area-selector">
+      <div class="area-selector-label">Select your cubicle</div>
+      <nav class="area-switch" aria-label="Select cubicle">
+        <button class="area-button" type="button" data-area="Isolation" aria-pressed="true">Isolation</button>
+        <button class="area-button" type="button" data-area="High Dependency 1" aria-pressed="false">High Dependency 1</button>
+        <button class="area-button" type="button" data-area="High Dependency 2" aria-pressed="false">High Dependency 2</button>
+        <button class="area-button" type="button" data-area="ASU 1" aria-pressed="false">ASU 1</button>
+      </nav>
+    </div>
+
+    <section class="staff-entry">
+      <label class="field-label" for="areaStaff">Checked by · <span id="staffAreaLabel">Isolation</span></label>
+      <p>Enter the staff member once for this cubicle and shift. This name applies to the whole checklist.</p>
+      <input id="areaStaff" type="text" placeholder="Name or staff ID" autocomplete="name">
+    </section>
+
+    <div id="accessMessage" class="locked-banner" role="status" hidden></div>
+
+    <section class="summary" aria-label="Checklist summary">
+      <div class="summary-card ok"><i class="summary-icon"></i><div><div class="summary-number" id="okCount">0</div><div class="summary-label">OK</div></div></div>
+      <div class="summary-card issue"><i class="summary-icon"></i><div><div class="summary-number" id="issueCount">0</div><div class="summary-label">Issues</div></div></div>
+      <div class="summary-card missing"><i class="summary-icon"></i><div><div class="summary-number" id="missingCount">0</div><div class="summary-label">Not available</div></div></div>
+      <div class="summary-card total"><i class="summary-icon"></i><div><div class="summary-number" id="pendingCount">0</div><div class="summary-label">To check</div></div></div>
+    </section>
+
+    <div id="checklist"></div>
+
+    <section class="general-note">
+      <h2><span id="noteAreaLabel">Isolation</span> shift note <span style="color:#71858e;font-weight:500">(optional)</span></h2>
+      <textarea id="shiftNote" placeholder="Handover notes or general observations…" aria-label="General shift note"></textarea>
+    </section>
+    </div>
+
+    <section id="summaryView" hidden aria-label="Shift summary report">
+      <div class="report-heading">
+        <div><h2 id="reportTitle">Shift summary</h2><p id="reportSubtitle">Preview the report here, then use Print to open your browser’s print dialog.</p></div>
+        <div class="report-actions">
+          <button class="text-button" id="downloadCsv" type="button">Download CSV · Excel / Sheets</button>
+          <button class="text-button" id="printPdf" type="button">Print preview</button>
+        </div>
+      </div>
+      <div class="report-summary" id="reportSummary"></div>
+      <div class="report-table-wrap">
+        <table class="report-table">
+          <thead><tr>
+            <th>Area</th><th>Equipment</th><th>Location</th><th>Status</th><th>Serial / oxygen remaining</th>
+            <th>Checked by</th><th>Issue notes</th><th>Borrowed</th><th>Borrowed by</th>
+            <th>Date &amp; time borrowed</th><th>Returned</th><th>Date &amp; time returned</th><th>Date &amp; time checked</th><th>Shift note</th>
+          </tr></thead>
+          <tbody id="reportRows"></tbody>
+        </table>
+      </div>
+      <p class="report-note" id="reportNotes"></p>
+    </section>
+
+    <details class="history" id="history">
+      <summary><span>Shift history</span><span aria-hidden="true">⌄</span></summary>
+      <div class="history-body" id="historyBody"></div>
+    </details>
+    <p class="footer-note">Checklist records are saved automatically in this browser on this device. Shift access uses this device’s clock; reliable prevention of clock changes requires a server-managed time check.</p>
+  </main>
+  <dialog class="print-preview" id="printPreview" aria-labelledby="previewTitle">
+    <div class="preview-header">
+      <strong id="previewTitle">Print preview</strong>
+      <div class="preview-actions">
+        <button type="button" id="closePreview">Close</button>
+        <button type="button" class="primary" id="confirmPrint">Print / Save PDF</button>
+      </div>
+    </div>
+    <div class="preview-body" id="previewContents"></div>
+  </dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <script>
+    (() => {
+      "use strict";
+
+      const STORAGE_KEY = "clinical-equipment-checks-v1";
+      const shifts = ["Morning", "Afternoon", "Night"];
+      const areas = [
+        { name: "Isolation", items: [
+          { name: "Emergency kit – 1", serial: true },
+          { name: "Emergency kit – 2", serial: true },
+          { name: "Disposable Ambu bag – Isolation" },
+          { name: "Oxygen tank meter" },
+          { name: "Zoll Machine" }
+        ] },
+        { name: "High Dependency 1", byShift: {
+          Morning: [
+            { name: "Oxylog machine 1" },
+            { name: "Oxylog machine 2" }
+          ],
+          Afternoon: [
+            { name: "BiPAP machine", quantity: 7 },
+            { name: "Ultrasound (US) machine" },
+            { name: "Bladder scanner" },
+            { name: "Doppler" },
+            { name: "Earprobe", quantity: 2 }
+          ],
+          Night: [
+            { name: "BiPAP machine", quantity: 7 },
+            { name: "Ultrasound (US) machine" },
+            { name: "Bladder scanner" },
+            { name: "Doppler" },
+            { name: "Earprobe", quantity: 2 }
+          ]
+        } },
+        { name: "High Dependency 2", items: [
+          { name: "Emergency trolley", serial: true },
+          { name: "Emergency kit – 1", serial: true },
+          { name: "Emergency kit – 2", serial: true },
+          { name: "Oxygen tank meter" },
+          { name: "Aerogen machine", quantity: 11 },
+          { name: "Disposable Ambu bag" },
+          { name: "Zoll Machine" }
+        ] },
+        { name: "ASU 1", items: [
+          { name: "Transport monitor", quantity: 8 },
+          { name: "High-flow Oxygen Machine", quantity: 2 },
+          { name: "High-flow Oxygen Machine – red tubing with blue cap", quantity: 2 },
+          { name: "High-flow Oxygen port" },
+          { name: "High-flow Oxygen gold flow meter", quantity: 1 }
+        ] }
+      ];
+
+      const dateInput = document.getElementById("checkDate");
+      const checklist = document.getElementById("checklist");
+      const shiftNote = document.getElementById("shiftNote");
+      const areaStaff = document.getElementById("areaStaff");
+      const saveState = document.getElementById("saveState");
+      let activeShift = preferredShift(new Date());
+      let activeArea = "Isolation";
+      let activeView = "checklist";
+      let store = loadStore();
+      let toastTimer;
+      let renderReport;
+
+      function preferredShift(now) {
+        const minutes = now.getHours() * 60 + now.getMinutes();
+        if (minutes >= 19 * 60) return "Night";
+        if (minutes >= 12 * 60) return "Afternoon";
+        return "Morning";
+      }
+      function localDateString(date = new Date()) {
+        const offset = date.getTimezoneOffset();
+        return new Date(date.getTime() - offset * 60000).toISOString().slice(0, 10);
+      }
+      function recordKey(date, shift) { return `${date}|${shift}`; }
+      function loadStore() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          return raw ? JSON.parse(raw) : {};
+        } catch (error) {
+          console.error("Unable to load saved equipment checks.", error);
+          showSaveError();
+          return {};
+        }
+      }
+      function showSaveError() {
+        saveState.classList.add("error");
+        saveState.lastElementChild.textContent = "Unable to save";
+      }
+      function persist() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+          saveState.classList.remove("error");
+          saveState.lastElementChild.textContent = "Saved on this device";
+          renderHistory();
+        } catch (error) {
+          console.error("Unable to save equipment checks.", error);
+          showSaveError();
+          showToast("Could not save on this device. Check available browser storage.");
+        }
+      }
+      function getRecord(create = true) {
+        const key = recordKey(dateInput.value, activeShift);
+        if (!store[key] && create) store[key] = { items: {}, note: "", areaNotes: {}, areaStaff: {} };
+        const record = store[key] || { items: {}, note: "", areaNotes: {}, areaStaff: {} };
+        if (!record.items) record.items = {};
+        if (!record.areaNotes) record.areaNotes = {};
+        if (!record.areaStaff) record.areaStaff = {};
+        return record;
+      }
+      function getShiftAreas(shift) {
+        return areas.map(area => ({
+          name: area.name,
+          items: area.byShift ? (area.byShift[shift] || []) : area.items
+        })).filter(area => area.items.length);
+      }
+      function makeItems(areaName, equipmentList) {
+        return equipmentList.flatMap(equipment => {
+          const count = equipment.quantity || 1;
+          return Array.from({ length: count }, (_, index) => {
+            const itemName = count > 1 ? `${equipment.name} ${index + 1}` : equipment.name;
+            const id = `${areaName}::${itemName}`;
+            const normalizedName = equipment.name.toLowerCase();
+            const locationExempt = ["emergency kit", "trolley", "ambu bag", "oxygen", "zoll"].some(term => normalizedName.includes(term));
+            return { id, areaName, name: itemName, baseName: equipment.name, serial: Boolean(equipment.serial), oxygen: equipment.name === "Oxygen tank meter", locationTracked: !locationExempt, index };
+          });
+        });
+      }
+      function escapeHtml(value) {
+        return String(value == null ? "" : value).replace(/[&<>"']/g, character => ({
+          "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+        })[character]);
+      }
+      function formatDateTime(value) {
+        if (value) return value;
+        const now = new Date();
+        return `${localDateString(now)}T${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+      }
+      function canEditSelectedShift(now = new Date()) {
+        const today = localDateString(now);
+        const selectedDate = dateInput.value;
+        const minutes = now.getHours() * 60 + now.getMinutes();
+        if (activeShift === "Morning") return selectedDate === today && minutes >= 360 && minutes <= 779;
+        if (activeShift === "Afternoon") return selectedDate === today && minutes >= 720 && minutes <= 1199;
+        if (selectedDate === today) return minutes >= 1140;
+        const yesterday = new Date(now.getTime());
+        yesterday.setDate(yesterday.getDate() - 1);
+        return activeShift === "Night" && selectedDate === localDateString(yesterday) && minutes <= 419;
+      }
+      function updateAccessState() {
+        const allowed = canEditSelectedShift();
+        const message = document.getElementById("accessMessage");
+        const startTimes = { Morning: "06:00", Afternoon: "12:00", Night: "19:00" };
+        const endTimes = { Morning: "12:59", Afternoon: "19:59", Night: "06:59" };
+        message.hidden = allowed;
+        if (!allowed) {
+          message.textContent = dateInput.value !== localDateString()
+            ? "This is a previous or future checklist. It is available to review, but edits are only allowed during the selected shift’s check window."
+            : `${activeShift} checks are locked right now. The check window is ${startTimes[activeShift]}–${endTimes[activeShift]} local time (30 minutes before shift start until shift end).`;
+        }
+        areaStaff.disabled = !allowed;
+        shiftNote.disabled = !allowed;
+        for (const control of checklist.querySelectorAll("button, input, textarea")) control.disabled = !allowed;
+      }
+      function render() {
+        for (const button of document.querySelectorAll(".shift-button")) {
+          button.setAttribute("aria-pressed", String(button.dataset.shift === activeShift));
+        }
+        for (const button of document.querySelectorAll(".area-button")) {
+          button.setAttribute("aria-pressed", String(button.dataset.area === activeArea));
+        }
+        const record = getRecord(false);
+        const area = getShiftAreas(activeShift).find(section => section.name === activeArea);
+        const sections = area ? [area] : [];
+        const allItems = sections.flatMap(section => makeItems(section.name, section.items));
+        const allowed = canEditSelectedShift();
+        document.getElementById("staffAreaLabel").textContent = activeArea;
+        document.getElementById("noteAreaLabel").textContent = activeArea;
+        areaStaff.value = record.areaStaff[activeArea] || findLegacyStaff(record, activeArea);
+        shiftNote.value = record.areaNotes[activeArea] || (activeArea === "Isolation" ? record.note || "" : "");
+        let ok = 0, issue = 0, missing = 0;
+        for (const item of allItems) {
+          const status = (record.items[item.id] || {}).status;
+          if (status === "ok") ok++;
+          else if (status === "issue") issue++;
+          else if (status === "missing") missing++;
+        }
+        document.getElementById("okCount").textContent = ok;
+        document.getElementById("issueCount").textContent = issue;
+        document.getElementById("missingCount").textContent = missing;
+        document.getElementById("pendingCount").textContent = allItems.length - ok - issue - missing;
+        checklist.innerHTML = sections.map(section => {
+          const items = makeItems(section.name, section.items);
+          return `<section class="area-section">
+            <div class="section-heading"><h2>${escapeHtml(section.name)}</h2><span class="section-count">${items.length} ${items.length === 1 ? "item" : "items"}</span></div>
+            <div class="equipment-list">${items.map((item, index) => renderItem(item, index, record.items[item.id] || {}, allowed)).join("")}</div>
+          </section>`;
+        }).join("");
+          updateAccessState();
+          renderReport();
+          renderHistory();
+      }
+      function findLegacyStaff(record, areaName) {
+        const prefix = `${areaName}::`;
+        const oldItem = Object.entries(record.items).find(([id, item]) => id.startsWith(prefix) && item.checkedBy);
+        return oldItem ? oldItem[1].checkedBy : "";
+      }
+      function renderItem(item, index, data, allowed) {
+        const status = data.status || "";
+        const borrowed = data.borrowed === true;
+        const returned = data.returned === true;
+        const oxygenField = item.oxygen;
+        const fieldName = oxygenField ? "oxygenRemaining" : "serialNumber";
+        const fieldLabel = oxygenField ? "Oxygen remaining / available" : "Serial number";
+        const fieldValue = oxygenField ? data.oxygenRemaining : data.serialNumber;
+        const fieldPlaceholder = oxygenField ? "e.g., 1,200 psi or 75%" : "Enter serial number";
+        return `<article class="equipment-card" data-status="${escapeHtml(status)}">
+          <div class="card-main">
+            <div class="card-title-row">
+              <div><h3 class="equipment-title">${escapeHtml(item.name)}</h3>${item.serial ? '<span class="equipment-unit">Serial number required</span>' : ""}</div>
+              <span class="card-number">${String(index + 1).padStart(2, "0")}</span>
+            </div>
+            <div class="status-group" role="group" aria-label="Status for ${escapeHtml(item.name)}">
+              <button class="status-button" type="button" data-action="status" data-id="${escapeHtml(item.id)}" data-value="ok" aria-pressed="${status === "ok"}" ${allowed ? "" : "disabled"}>Checked / OK</button>
+              <button class="status-button" type="button" data-action="status" data-id="${escapeHtml(item.id)}" data-value="issue" aria-pressed="${status === "issue"}" ${allowed ? "" : "disabled"}>Issue Found</button>
+              <button class="status-button" type="button" data-action="status" data-id="${escapeHtml(item.id)}" data-value="missing" aria-pressed="${status === "missing"}" ${allowed ? "" : "disabled"}>Not Available</button>
+            </div>
+          </div>
+          <div class="details">
+            <div class="form-field">
+              <label for="${escapeHtml(item.id)}-serial">${fieldLabel}</label>
+              <input id="${escapeHtml(item.id)}-serial" data-field="${fieldName}" data-id="${escapeHtml(item.id)}" value="${escapeHtml(fieldValue)}" placeholder="${fieldPlaceholder}" autocomplete="off" ${allowed ? "" : "disabled"}>
+            </div>
+            ${item.locationTracked ? renderLocation(item, data, allowed) : ""}
+            ${status === "issue" ? `<div class="form-field full"><label for="${escapeHtml(item.id)}-issue">Issue notes</label><textarea id="${escapeHtml(item.id)}-issue" data-field="issueNotes" data-id="${escapeHtml(item.id)}" placeholder="Describe the issue…" ${allowed ? "" : "disabled"}>${escapeHtml(data.issueNotes)}</textarea></div>` : ""}
+            <div class="form-field full">
+              <div class="toggle-row"><span class="control-label" style="margin:0">Borrowed?</span>${toggleMarkup(item.id, "borrowed", borrowed, allowed)}</div>
+            </div>
+            ${borrowed ? `<div class="form-field">
+                <label for="${escapeHtml(item.id)}-borrower">Borrowed by</label>
+                <input id="${escapeHtml(item.id)}-borrower" data-field="borrowedBy" data-id="${escapeHtml(item.id)}" value="${escapeHtml(data.borrowedBy)}" placeholder="Name" autocomplete="name" ${allowed ? "" : "disabled"}>
+              </div>
+              <div class="form-field">
+                <label for="${escapeHtml(item.id)}-borrowtime">Date &amp; time borrowed</label>
+                <input id="${escapeHtml(item.id)}-borrowtime" type="datetime-local" data-field="borrowedAt" data-id="${escapeHtml(item.id)}" value="${escapeHtml(data.borrowedAt || formatDateTime())}" ${allowed ? "" : "disabled"}>
+              </div>
+              <div class="form-field full">
+                <div class="toggle-row"><span class="control-label" style="margin:0">Returned?</span>${toggleMarkup(item.id, "returned", returned, allowed)}</div>
+              </div>
+              ${returned ? `<div class="form-field full">
+                <label for="${escapeHtml(item.id)}-returntime">Date &amp; time returned</label>
+                <input id="${escapeHtml(item.id)}-returntime" type="datetime-local" data-field="returnedAt" data-id="${escapeHtml(item.id)}" value="${escapeHtml(data.returnedAt || formatDateTime())}" ${allowed ? "" : "disabled"}>
+              </div>` : ""}` : ""}
+            <div class="form-field full">
+              <label for="${escapeHtml(item.id)}-checktime">Date &amp; time of check</label>
+              <input id="${escapeHtml(item.id)}-checktime" type="datetime-local" data-field="checkedAt" data-id="${escapeHtml(item.id)}" value="${escapeHtml(data.checkedAt || formatDateTime())}" ${allowed ? "" : "disabled"}>
+            </div>
+          </div>
+        </article>`;
+      }
+      function renderLocation(item, data, allowed) {
+        const locationType = data.locationType || "";
+        return `<div class="form-field full">
+          <label>Current location</label>
+          <div class="location-options">
+            <label class="location-option"><input type="radio" name="${escapeHtml(item.id)}-location" data-field="locationType" data-id="${escapeHtml(item.id)}" value="room" ${locationType === "room" ? "checked" : ""} ${allowed ? "" : "disabled"}> Equipment room</label>
+            <label class="location-option"><input type="radio" name="${escapeHtml(item.id)}-location" data-field="locationType" data-id="${escapeHtml(item.id)}" value="bed" ${locationType === "bed" ? "checked" : ""} ${allowed ? "" : "disabled"}> In use at a bed</label>
+          </div>
+          ${locationType === "bed" ? `<div style="margin-top:8px"><label for="${escapeHtml(item.id)}-bed">Bed number</label><input id="${escapeHtml(item.id)}-bed" data-field="bedNumber" data-id="${escapeHtml(item.id)}" value="${escapeHtml(data.bedNumber)}" placeholder="Enter bed number" autocomplete="off" ${allowed ? "" : "disabled"}></div>` : ""}
+        </div>`;
+      }
+      function toggleMarkup(id, field, selected, allowed) {
+        return `<div class="toggle ${selected ? "yes" : ""}" role="group" aria-label="${field === "borrowed" ? "Borrowed" : "Returned"}">
+          <button type="button" data-action="toggle" data-id="${escapeHtml(id)}" data-field="${field}" data-value="yes" aria-pressed="${selected}" ${allowed ? "" : "disabled"}>Yes</button>
+          <button type="button" data-action="toggle" data-id="${escapeHtml(id)}" data-field="${field}" data-value="no" aria-pressed="${!selected}" ${allowed ? "" : "disabled"}>No</button>
+        </div>`;
+      }
+      function handleAction(event) {
+        const target = event.target.closest("button[data-action]");
+        if (!target) return;
+        if (!canEditSelectedShift()) {
+          showToast("Checklist edits are locked outside the selected shift’s check window.");
+          render();
+          return;
+        }
+        const record = getRecord();
+        const id = target.dataset.id;
+        const item = record.items[id] || (record.items[id] = {});
+        if (target.dataset.action === "status") {
+          item.status = target.dataset.value;
+          if (!item.checkedAt) item.checkedAt = formatDateTime();
+          persist();
+          render();
+          return;
+        }
+        const field = target.dataset.field;
+        const value = target.dataset.value === "yes";
+        item[field] = value;
+        if (field === "borrowed" && value && !item.borrowedAt) item.borrowedAt = formatDateTime();
+        if (field === "returned" && value && !item.returnedAt) item.returnedAt = formatDateTime();
+        persist();
+        render();
+      }
+      function handleFieldInput(event) {
+        const target = event.target;
+        if (!canEditSelectedShift()) {
+          showToast("Checklist edits are locked outside the selected shift’s check window.");
+          render();
+          return;
+        }
+        if (target === areaStaff) {
+          const record = getRecord();
+          record.areaStaff[activeArea] = target.value;
+          const areaPrefix = `${activeArea}::`;
+          for (const [id, item] of Object.entries(record.items)) {
+            if (id.startsWith(areaPrefix) && item && Object.prototype.hasOwnProperty.call(item, "checkedBy")) delete item.checkedBy;
+          }
+          persist();
+        } else if (target.dataset.field) {
+          const record = getRecord();
+          const item = record.items[target.dataset.id] || (record.items[target.dataset.id] = {});
+          item[target.dataset.field] = target.value;
+          persist();
+          if (target.dataset.field === "locationType") render();
+        } else if (target === shiftNote) {
+          getRecord().areaNotes[activeArea] = target.value;
+          persist();
+        }
+      }
+      function reportData() {
+        const record = getRecord(false);
+        const rows = getShiftAreas(activeShift).flatMap(area => {
+          const areaNote = record.areaNotes[area.name] || (area.name === "Isolation" ? record.note || "" : "");
+          const checkedBy = record.areaStaff[area.name] || findLegacyStaff(record, area.name);
+          return makeItems(area.name, area.items).map(item => {
+            const data = record.items[item.id] || {};
+            const status = data.status || "";
+            return {
+              area: area.name,
+              equipment: item.name,
+              location: item.locationTracked ? (data.locationType === "room" ? "Equipment room" : data.locationType === "bed" ? `Bed ${data.bedNumber || ""}`.trim() : "") : "",
+              status,
+              serialOrOxygen: item.oxygen ? data.oxygenRemaining || "" : data.serialNumber || "",
+              shiftNote: areaNote,
+              checkedBy: checkedBy || data.checkedBy || "",
+              issueNotes: data.issueNotes || "",
+              borrowed: data.borrowed === true ? "Yes" : "No",
+              borrowedBy: data.borrowedBy || "",
+              borrowedAt: data.borrowedAt || "",
+              returned: data.returned === true ? "Yes" : (data.borrowed === true ? "No" : ""),
+              returnedAt: data.returnedAt || "",
+              checkedAt: data.checkedAt || ""
+            };
+          });
+        });
+        return rows;
+      }
+      function reportStatusLabel(status) {
+        return ({ ok: "Checked / OK", issue: "Issue Found", missing: "Not Available" })[status] || "Not checked";
+      }
+      renderReport = function() {
+        const rows = reportData();
+        const counts = {
+          ok: rows.filter(row => row.status === "ok").length,
+          issue: rows.filter(row => row.status === "issue").length,
+          missing: rows.filter(row => row.status === "missing").length,
+          borrowed: rows.filter(row => row.borrowed === "Yes").length,
+          pending: rows.filter(row => !row.status).length
+        };
+        const formattedDate = dateInput.value
+          ? new Date(`${dateInput.value}T12:00:00`).toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" })
+          : "";
+        document.getElementById("reportTitle").textContent = `${activeShift} shift summary`;
+        document.getElementById("reportSubtitle").textContent = `${formattedDate} · All cubicles · ${rows.length} equipment items`;
+        document.getElementById("reportSummary").innerHTML = [
+          ["ok", "Checked / OK"], ["issue", "Issues"], ["missing", "Not available"], ["borrowed", "Borrowed"], ["pending", "To check"]
+        ].map(([key, label]) => `<div class="report-stat"><strong>${counts[key]}</strong><span>${label}</span></div>`).join("");
+        document.getElementById("reportRows").innerHTML = rows.map(row => {
+          const statusClass = row.status || "pending";
+          return `<tr>
+            <td>${escapeHtml(row.area)}</td>
+            <td>${escapeHtml(row.equipment)}</td>
+            <td>${escapeHtml(row.location)}</td>
+            <td><span class="report-status ${statusClass}">${reportStatusLabel(row.status)}</span></td>
+            <td>${escapeHtml(row.serialOrOxygen)}</td>
+            <td>${escapeHtml(row.checkedBy)}</td>
+            <td>${escapeHtml(row.issueNotes)}</td>
+            <td>${row.borrowed}</td>
+            <td>${escapeHtml(row.borrowedBy)}</td>
+            <td>${escapeHtml(row.borrowedAt)}</td>
+            <td>${escapeHtml(row.returned)}</td>
+            <td>${escapeHtml(row.returnedAt)}</td>
+            <td>${escapeHtml(row.checkedAt)}</td>
+            <td>${escapeHtml(row.shiftNote)}</td>
+          </tr>`;
+        }).join("");
+      };
+      function csvCell(value) {
+        let text = String(value == null ? "" : value);
+        if (/^[=+\-@]/.test(text)) text = `'${text}`;
+        return `"${text.replace(/"/g, '""')}"`;
+      }
+      function downloadCsv() {
+        const headers = ["Area", "Equipment", "Location", "Status", "Serial number / oxygen remaining", "Checked by", "Issue notes", "Borrowed", "Borrowed by", "Date & time borrowed", "Returned", "Date & time returned", "Date & time checked", "Shift note"];
+        const rows = reportData();
+        const content = [headers, ...rows.map(row => [
+          row.area, row.equipment, row.location, reportStatusLabel(row.status), row.serialOrOxygen, row.checkedBy,
+          row.issueNotes, row.borrowed, row.borrowedBy, row.borrowedAt, row.returned, row.returnedAt,
+          row.checkedAt, row.shiftNote
+        ])].map(row => row.map(csvCell).join(",")).join("\r\n");
+        const blob = new Blob(["\uFEFF", content], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `equipment-${dateInput.value}-${activeShift.toLowerCase()}-summary.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      }
+      function renderHistory() {
+        const container = document.getElementById("historyBody");
+        if (!container) return;
+        const days = [...new Set(Object.keys(store).map(key => key.slice(0, 10)))].sort().reverse();
+        if (!days.length) {
+          container.innerHTML = '<div class="history-empty">Saved shifts will appear here for quick review.</div>';
+          return;
+        }
+        container.innerHTML = days.map(date => {
+          const savedShifts = shifts.filter(shift => store[recordKey(date, shift)]);
+          return `<div class="history-day"><strong>${escapeHtml(new Date(`${date}T12:00:00`).toLocaleDateString(undefined, { weekday: "short", year: "numeric", month: "short", day: "numeric" }))}</strong>
+            <div class="history-shifts">${savedShifts.map(shift => `<button type="button" data-history-date="${date}" data-history-shift="${shift}">${shift}</button>`).join("")}</div>
+          </div>`;
+        }).join("");
+      }
+      function showToast(message) {
+        const toast = document.getElementById("toast");
+        toast.textContent = message;
+        toast.hidden = false;
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { toast.hidden = true; }, 3500);
+      }
+
+      checklist.addEventListener("click", handleAction);
+      checklist.addEventListener("input", handleFieldInput);
+      checklist.addEventListener("change", handleFieldInput);
+      shiftNote.addEventListener("input", handleFieldInput);
+      shiftNote.addEventListener("change", handleFieldInput);
+      areaStaff.addEventListener("input", handleFieldInput);
+      areaStaff.addEventListener("change", handleFieldInput);
+      document.querySelector(".shift-switch").addEventListener("click", event => {
+        const button = event.target.closest("[data-shift]");
+        if (!button) return;
+        activeShift = button.dataset.shift;
+        render();
+      });
+      document.querySelector(".area-switch").addEventListener("click", event => {
+        const button = event.target.closest("[data-area]");
+        if (!button) return;
+        activeArea = button.dataset.area;
+        render();
+      });
+      document.querySelector(".view-switch").addEventListener("click", event => {
+        const button = event.target.closest("[data-view]");
+        if (!button) return;
+        activeView = button.dataset.view;
+        const checklistView = activeView === "checklist";
+        document.getElementById("checklistView").hidden = !checklistView;
+        document.getElementById("summaryView").hidden = checklistView;
+        for (const viewButton of document.querySelectorAll(".view-button")) {
+          viewButton.setAttribute("aria-pressed", String(viewButton.dataset.view === activeView));
+        }
+        if (!checklistView) renderReport();
+      });
+      dateInput.addEventListener("change", render);
+      document.getElementById("previousDay").addEventListener("click", () => changeDate(-1));
+      document.getElementById("nextDay").addEventListener("click", () => changeDate(1));
+      document.getElementById("todayButton").addEventListener("click", () => { dateInput.value = localDateString(); render(); });
+      document.getElementById("downloadCsv").addEventListener("click", downloadCsv);
+      const printPreview = document.getElementById("printPreview");
+      document.getElementById("printPdf").addEventListener("click", () => {
+        renderReport();
+        if (typeof printPreview.showModal !== "function") {
+          showToast("In-app print preview is not supported by this browser. Use the browser menu’s Print option instead.");
+          return;
+        }
+        const preview = document.getElementById("summaryView").cloneNode(true);
+        preview.removeAttribute("id");
+        preview.removeAttribute("hidden");
+        const reportActions = preview.querySelector(".report-actions");
+        if (reportActions) reportActions.remove();
+        const previewContents = document.getElementById("previewContents");
+        previewContents.replaceChildren(preview);
+        printPreview.showModal();
+      });
+      document.getElementById("closePreview").addEventListener("click", () => printPreview.close());
+      document.getElementById("confirmPrint").addEventListener("click", () => {
+        if (typeof window.print !== "function") {
+          showToast("Printing is not supported here. Download the CSV and use your device’s print or export tools.");
+          return;
+        }
+        window.print();
+      });
+      printPreview.addEventListener("click", event => {
+        if (event.target === printPreview) printPreview.close();
+      });
+      document.getElementById("historyBody").addEventListener("click", event => {
+        const button = event.target.closest("[data-history-date]");
+        if (!button) return;
+        dateInput.value = button.dataset.historyDate;
+        activeShift = button.dataset.historyShift;
+        render();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+      function changeDate(amount) {
+        const current = new Date(`${dateInput.value}T12:00:00`);
+        current.setDate(current.getDate() + amount);
+        dateInput.value = localDateString(current);
+        render();
+      }
+
+      dateInput.value = localDateString();
+      render();
+      window.setInterval(updateAccessState, 30000);
+    })();
+  </script>
+</body>
+</html>
